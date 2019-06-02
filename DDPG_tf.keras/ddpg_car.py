@@ -134,7 +134,7 @@ def save_actor_critic_weights():
 	print("saved")
 def load_actor_critic_weights():
 	actorpath=r"C:\\Users\\Dell\\Desktop\\holidASY\\softAC,DDPG\\ddpg_car_actor.h5"
-	criticpath=r"C:\\Users\\Dell\\Desktop\\holidASY\\softAC,DDPG\\ddpg_car_scritic.h5"
+	criticpath=r"C:\\Users\\Dell\\Desktop\\holidASY\\softAC,DDPG\\ddpg_car_critic.h5"
 	primary_actor.load_weights(actorpath)
 	primary_critic.load_weights(criticpath)
 	print("loaded")
