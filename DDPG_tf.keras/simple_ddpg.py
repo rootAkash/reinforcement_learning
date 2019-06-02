@@ -28,6 +28,7 @@ primary_actor= tf.keras.Model(inputs=state_inputs, outputs=action_outputs, name=
 # so loss=U(s)*dQ/da ; policy params =@
 # then dloss/d@=(dU(s)/d@)*dQ/da ; since dQ/da is a const here that is y_true
 # so the eqn of dL/d@ = (da/d@)*(dQ/da) => d@/d@ ; which is ddpg actor loss (it changes the policy params to maximize the Q that is give better actions)
+#as it shows U(s)-> a can be a diffenet scale and Q(s,a)an be diffent scale
 def actorloss(y_true,y_pred):
 	q= tf.multiply(y_true,y_pred)
 	loss = tf.reduce_mean(-q)# for maxiimizing Q we minimize -Q with gradient descent
@@ -100,6 +101,7 @@ def replay_train_critic_actor(size=128):
 		states.append(s)	
 	primary_critic.fit([np.array(states),np.array(actions)],np.array(qty),epochs=1,verbose=0)		
 	a = primary_actor.predict(np.array(states))
+	actions=np.array(actions)
 	dq_da=get_qgrads([states,a])
 	primary_actor.fit(np.array(states),dq_da,epochs=1,verbose=0)
 
@@ -137,7 +139,7 @@ update_actor_target(0)
 ctr = 0
 var=3
 render =False
-load_actor_critic_weights()
+#load_actor_critic_weights()
 for ep in range(episodes):
 	s = env.reset()
 	done=False
@@ -147,9 +149,9 @@ for ep in range(episodes):
 			env.render()
 		action=primary_actor.predict(np.array([s.ravel()]))[0]
 		e=np.random.normal(action,var,size=(1,a_dim))[0]
-		a =np.clip(e+ action,-a_bound,a_bound )
+		a =np.clip(e,-1,1)
 		
-		s_,r,done,_=env.step(a.ravel())
+		s_,r,done,_=env.step(a_bound*a.ravel())
 		remember(s,a,r,s_,done)
 		
 		if ctr%100 == 0:
@@ -165,5 +167,6 @@ for ep in range(episodes):
 	update_critic_target(0.2)
 	update_actor_target(0.2)
 	if ep > 200:
+		var=0
 		render=True	
 		save_actor_critic_weights()
