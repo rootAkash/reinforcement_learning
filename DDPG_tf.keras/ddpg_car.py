@@ -166,9 +166,9 @@ for ep in range(episodes):
 		
 		if ctr%100 == 0:
 			var=var*0.9995
-			replay_train_critic_actor(128)
-			update_critic_target(0.2)
-			update_actor_target(0.2)
+			replay_train_critic_actor(512)
+			update_critic_target(0.5)
+			update_actor_target(0.5)
 		stp+=1
 		ctr+=1
 		s=s_
@@ -178,8 +178,8 @@ for ep in range(episodes):
 	if stp<100:
 		var*=0.95
 	replay_train_critic_actor(512)
-	update_critic_target(0.2)
-	update_actor_target(0.2)
+	update_critic_target(0.5)
+	update_actor_target(0.5)
 	if var<0.09:
 		var=0
 		render=True	
