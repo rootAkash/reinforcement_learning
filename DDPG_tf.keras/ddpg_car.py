@@ -146,7 +146,7 @@ steps = 2000
 update_critic_target(0)
 update_actor_target(0)
 ctr = 0
-var=0.5
+var=1
 render =False
 #load_actor_critic_weights()
 s = env.reset()
