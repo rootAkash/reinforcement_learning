@@ -158,10 +158,10 @@ for ep in range(episodes):
 	
 		if render:
 			env.render()	
-		action=primary_actor.predict(np.array([s.ravel()]))[0]
+		action=primary_actor.predict(np.array([s.ravel()]))[0]# the NN output is (-1,1)
 		e=np.random.normal(action,var,size=(1,a_dim))[0]
 		a =np.clip(e,-1,1 )
-		s_,r,done,_=env.step(a_bound*a.ravel())
+		s_,r,done,_=env.step(a_bound*a.ravel())#scaling the action to actual action
 		remember(s,a,r,s_,done)
 		
 		if ctr%100 == 0:
