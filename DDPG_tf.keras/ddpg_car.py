@@ -146,7 +146,7 @@ steps = 2000
 update_critic_target(0)
 update_actor_target(0)
 ctr = 0
-var=3
+var=0.5
 render =False
 #load_actor_critic_weights()
 s = env.reset()
@@ -160,13 +160,12 @@ for ep in range(episodes):
 			env.render()	
 		action=primary_actor.predict(np.array([s.ravel()]))[0]
 		e=np.random.normal(action,var,size=(1,a_dim))[0]
-		a =np.clip(e+ action,-a_bound,a_bound )
-		
-		s_,r,done,_=env.step(a.ravel())
+		a =np.clip(e,-1,1 )
+		s_,r,done,_=env.step(a_bound*a.ravel())
 		remember(s,a,r,s_,done)
 		
 		if ctr%100 == 0:
-			var=var*0.999
+			var=var*0.9995
 			replay_train_critic_actor(128)
 			update_critic_target(0.2)
 			update_actor_target(0.2)
@@ -184,4 +183,4 @@ for ep in range(episodes):
 	if var<0.09:
 		var=0
 		render=True	
-		#save_actor_critic_weights()
+		save_actor_critic_weights()
