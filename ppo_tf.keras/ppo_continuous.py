@@ -1,9 +1,7 @@
-# the current policy which we use to sample data , the sampled data automatically becomes the old policy data once we start training 
-#the policy net for more than 1 epoch  
 import tensorflow as tf
 import numpy as np
 import gym
-#import tensorflow_probability as tfp
+
 
 
 env=gym.make('Pendulum-v0')
