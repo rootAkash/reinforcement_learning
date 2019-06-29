@@ -22,7 +22,7 @@ def discount_rewards_mine(r,gamma):
 		running_add = running_add * gamma + r[t]
 		discounted_r[t] = running_add
 	#discounted_r -= np.mean(discounted_r) #normalizing the result
-	#discounted_r /= np.std(discounted_r)	
+	#discounted_r /= np.std(discounted_r + 1e-08)	
 	return discounted_r		
 
 
@@ -32,24 +32,39 @@ FILE=r"C:\\Users\\Dell\\Desktop\\holidASY\\cart_policy_s_w_w3.h5"
 model = tf.keras.models.Sequential()
 
 
-model.add(tf.keras.layers.Dense(units=8,input_dim=4, activation='sigmoid'))
+model.add(tf.keras.layers.Dense(units=8,input_dim=4, activation='sigmoid',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=1)))
 #model.add(tf.keras.layers.Dense(units=8, activation='relu',kernel_initializer='RandomNormal'))
-model.add(tf.keras.layers.Dense(units=4, activation='relu'))
+model.add(tf.keras.layers.Dense(units=4, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=1)))
 # output layer
-model.add(tf.keras.layers.Dense(units=2, activation='softmax'))
+model.add(tf.keras.layers.Dense(units=2, activation='softmax',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=1)))
 
 # compile the model using traditional Machine Learning losses and optimizers
+# inbuilt categorical_cross entropy was giving zero gradients 
+def loss(y_true, y_pred):
+	loss = - tf.reduce_mean(tf.multiply(y_true,tf.log(y_pred)))	
+
+	return loss
+
 
 optimizer=tf.keras.optimizers.Adam(lr=0.01,beta_1=0.9,epsilon=None,decay=0.0001,amsgrad=False)
 #model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
-model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
+#model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=['accuracy'])
+model.compile(loss=loss, optimizer=optimizer, metrics=[loss])
+
 model.summary()
 #model_1=model
+def is_update(new,old):
+	for i in range(len(new)):
+		print(new[i]-old[i])
+
+
+
+
 # gym initialization
 
 env=gym.make('CartPole-v0')
 observation = env.reset()
-
+#env.seed(1)
 right=np.array([0,1])
 left=np.array([1,0])
 done =False
@@ -75,13 +90,14 @@ for episode_nb in range(episodes):
 	while not done:
 		#observation=np.array([observation])
 		#print(np.shape(observation))
-		env.render()
+		if episode_nb  > 1000:
+			env.render()
 		#print(observation[2])
 		# forward the policy network and sample action according to the proba distribution
 		proba = model.predict(np.array([observation]))
 		#action = np.argmax(proba[0].ravel())
 		action = np.random.choice(np.arange(proba.shape[1]), p=proba.ravel())
-		print(proba[0].ravel())
+		#print(proba[0].ravel())
 
 		#print(np.argmax(proba[0]))
 		y = np.array([action]) #  our labels
@@ -121,6 +137,8 @@ for episode_nb in range(episodes):
 	y_train=np.array(y_train)
 
 	drr=discount_rewards_mine(rewards, gamma)
+	
+	#old_params = model.get_weights()
 	#model.fit(x=x_train, y=y_train, epochs=1,verbose=1, sample_weight=drr)
 	
 	yyy=[]
@@ -135,9 +153,12 @@ for episode_nb in range(episodes):
 
 		yyy.append(yy)
 	yyy=np.array(yyy)	
-	model.fit(x=x_train, y=yyy, epochs=1,verbose=1)
-	print(drr)
-	print(yyy)
+	old_params = model.get_weights()
+	model.fit(x=x_train, y=yyy, epochs=1,verbose=0)
+	new_params = model.get_weights()
+	#is_update(new_params,old_params)
+	#print(drr)
+	#print(yyy)
 	
 	#if episode_nb%10==0:
 		#model_1=model	                                                     
