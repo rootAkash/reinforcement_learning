@@ -23,11 +23,11 @@ E_inputs = tf.keras.Input(shape=(1,), name='E_samples')
 dq_da = tf.keras.Input(shape=(1,), name='dq1/danew')
 
 state_inputs = tf.keras.Input(shape=(s_dim,), name='state')
-x = tf.keras.layers.Dense(100, activation='relu')(state_inputs)
-x1 = tf.keras.layers.Dense(50, activation='relu')(x)
-mu_0 = tf.keras.layers.Dense(a_dim, activation='tanh')(x1)
-x2 = tf.keras.layers.Dense(25, activation='relu')(x)
-sigma_0 = tf.keras.layers.Dense(a_dim, activation='softplus')(x2)
+x = tf.keras.layers.Dense(100, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(state_inputs)
+x1 = tf.keras.layers.Dense(50, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x)
+mu_0 = tf.keras.layers.Dense(a_dim, activation='tanh',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x1)
+x2 = tf.keras.layers.Dense(25, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x)
+sigma_0 = tf.keras.layers.Dense(a_dim, activation='softplus',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x2)
 mu = tf.keras.layers.Lambda(lambda x: x )(mu_0)
 sigma = tf.keras.layers.Lambda(lambda x: tf.clip_by_value(x,1e-22 , 1e+02))(sigma_0)# clamp bet e -22 , e +2
 musig=tf.keras.layers.concatenate([mu,sigma])
@@ -61,10 +61,10 @@ policy.summary()
 ###################### q functions #######################
 
 action_inputs =  tf.keras.Input(shape=(a_dim,), name='action')
-x=tf.keras.layers.Dense(100, activation='relu')(state_inputs)
+x=tf.keras.layers.Dense(100, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(state_inputs)
 x=tf.keras.layers.concatenate([tf.keras.layers.Flatten()(x),action_inputs])
-x=tf.keras.layers.Dense(64, activation='relu')(x)
-Qout=tf.keras.layers.Dense(1, activation=None)(x)
+x=tf.keras.layers.Dense(64, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x)
+Qout=tf.keras.layers.Dense(1, activation=None,kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x)
 q_1= tf.keras.Model(inputs=[state_inputs,action_inputs], outputs=Qout, name='p_critic_model')
 q_1.compile(loss="mse",optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 q_1.summary()
@@ -77,9 +77,9 @@ get_q_1_grads= tf.keras.backend.function([q_1.input[0], q_1.input[1]], tf.keras.
 ########################### val func #######################
 
 
-x = tf.keras.layers.Dense(100, activation='relu')(state_inputs)
-x = tf.keras.layers.Dense(64, activation='relu')(x)
-value_outputs = tf.keras.layers.Dense(1, activation=None)(x)
+x = tf.keras.layers.Dense(100, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(state_inputs)
+x = tf.keras.layers.Dense(64, activation='relu',kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x)
+value_outputs = tf.keras.layers.Dense(1, activation=None,kernel_initializer=tf.keras.initializers.glorot_uniform(seed=44))(x)
 value= tf.keras.Model(inputs=state_inputs, outputs=value_outputs, name='p_value_model')
 value.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 value.summary()
@@ -87,9 +87,6 @@ t_value= tf.keras.Model(inputs=state_inputs, outputs=value_outputs, name='t_valu
 #t_value.compile(loss="mse", optimizer=tf.keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
 t_value.trainable =False
 t_value.summary()
-
-
-
 
 memory=deque(maxlen=20000)
 
@@ -176,7 +173,7 @@ def load_actor_weights():
 
 
 episodes = 5000
-steps = 2000 
+steps = 3500 
 update_value_target(1)
 ctr = 0
 render =False
@@ -189,7 +186,7 @@ for ep in range(episodes):
 	rews=0
 	if ep>15:
 		render=1
-		#save_actor_weights()
+		save_actor_weights()
 	for step in range(steps):
 		if done:
 			s = env.reset()
@@ -199,7 +196,14 @@ for ep in range(episodes):
 		mu,sig=musig[0][0],musig[0][1]
 		E =np.random.normal(0,1)
 		Action  =np.tanh(mu + sig*E)
+		if ep < 10 :
+			# for some additional exploration not necesserily needed
+			if E > 0.5:
+				Action = np.clip(a_bound*E,-a_bound,a_bound)		
 		s_,r,done,_=env.step(np.array([Action*a_bound]))
+		if done :
+			r =r+10000	# to encourage reaching target more
+			print("reached")
 		remember(s,Action,r,s_,done)
 		rews+=r	
 		ctr+=1
@@ -207,7 +211,7 @@ for ep in range(episodes):
 	print("episode: "+str(ep)+ " rews: "+str(rews))		
 	print("training")
 	for i in  range(train_iter):
-		replay_and_train(8)
+		replay_and_train(16)
 		if i % (train_iter//10)==0:
 			print('.',end='')
 	print('|')		
