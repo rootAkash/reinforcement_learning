@@ -24,7 +24,7 @@ dq_da = tf.keras.Input(shape=(1,), name='dq1/danew')
 
 state_inputs = tf.keras.Input(shape=(s_dim,), name='state')
 x = tf.keras.layers.Dense(100, activation='relu')(state_inputs)
-x1 = tf.keras.layers.Dense(100, activation='relu')(x)
+x1 = tf.keras.layers.Dense(50, activation='relu')(x)
 mu_0 = tf.keras.layers.Dense(a_dim, activation='tanh')(x1)
 x2 = tf.keras.layers.Dense(25, activation='relu')(x)
 sigma_0 = tf.keras.layers.Dense(a_dim, activation='softplus')(x2)
