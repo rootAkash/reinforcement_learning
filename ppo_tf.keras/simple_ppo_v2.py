@@ -150,9 +150,9 @@ for episode in range(1,episodes):
 	values_ = critic.predict(np.array(memory.batch_s_))
 	returns = gae_calc(values,values_,memory.batch_r,memory.batch_done)	
 	advantage=returns-values
-	old_Prediction=memory.batch_a
+	old_Prediction=memory.batch_a##########################this is wrong since its not action probablity under current policy
 	old_Prediction=np.array(old_Prediction)
-	action=np.array(memory.batch_a)
+	action=np.array(memory.batch_a)########################
 	print(episode)
 	policy.fit(x=[obs,advantage, old_Prediction],y=action,batch_size=200,shuffle=True, epochs=15, verbose=False)
 	critic.fit([obs],[returns], batch_size=200, shuffle=True, epochs=15, verbose=False)
