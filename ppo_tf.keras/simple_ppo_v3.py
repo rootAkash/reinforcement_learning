@@ -142,7 +142,7 @@ for episode in range(1,episodes):
 	values_ = critic.predict(np.array(memory.batch_s_))
 	returns = adv_calc(values,values_,memory.batch_r,memory.batch_done)	
 	advantage=returns-values
-	old_Prediction=memory.batch_a
+	old_Prediction=memory.batch_a# wrong here #####################################################################
 	old_Prediction=np.array(old_Prediction)
 	action=np.array(memory.batch_a)
 	print(episode)
