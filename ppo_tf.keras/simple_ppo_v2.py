@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 import gym
 
+tf.compat.v1.disable_eager_execution()
 
 #env=gym.make('Acrobot-v1')
 env=gym.make('CartPole-v1')
@@ -30,7 +31,7 @@ action_outputs = tf.keras.layers.Dense(a_dim, activation='softmax')(x)
 
 def proximal_policy_optimization_loss(advantage, old_prediction):
 	loss_clipping = 0.2
-	entropy_loss = 0.01
+	entropy_loss = 0.0
 	#y_true = one hot actions , y_pred = prob output
 	def loss(y_true, y_pred):
 		prob = y_true * y_pred
@@ -69,13 +70,15 @@ class Memory:
 		self.batch_r = []
 		self.batch_s_ = []
 		self.batch_done = []
+		self.batch_pred =[]
 
-	def store(self, s, a, s_, r, done):
+	def store(self, s, a, s_, r, done,pred):
 		self.batch_s.append(s)
 		self.batch_a.append(a)
 		self.batch_r.append(r)
 		self.batch_s_.append(s_)
 		self.batch_done.append(done)
+		self.batch_pred.append(pred)    
 
 	def clear(self):
 		self.batch_s.clear()
@@ -83,6 +86,8 @@ class Memory:
 		self.batch_r.clear()
 		self.batch_s_.clear()
 		self.batch_done.clear()
+		self.batch_pred.clear()    
+
 	def cnt_samples(self):
 		return len(self.batch_s)
 def onehot(a,s):
@@ -126,7 +131,7 @@ memory=Memory()
 render=0
 s=env.reset()
 for episode in range(1,episodes):
-	
+	rew = 0
 	if episode>220:
 		render=1
 	for step in range(steps):
@@ -139,22 +144,25 @@ for episode in range(1,episodes):
 		#	action = random_action
 		action_one_hot=onehot(action,a_dim)# acton matrix
 		s_, reward, done, info = env.step(action)
-		memory.store(s.ravel(),action_one_hot.ravel(),s_.ravel(),reward,done)# s, a, s_, r, done
+		memory.store(s.ravel(),action_one_hot.ravel(),s_.ravel(),reward,done,pred_action.ravel())# s, a, s_, r, done ,pred
 		if done:
+			print(rew, end ='')
 			s_=env.reset()
-
+			rew = 0 
 		s=s_
+		rew+=reward
 	# updation
 	obs =np.array( memory.batch_s)
 	values = critic.predict(np.array(memory.batch_s))
 	values_ = critic.predict(np.array(memory.batch_s_))
 	returns = gae_calc(values,values_,memory.batch_r,memory.batch_done)	
 	advantage=returns-values
-	old_Prediction=memory.batch_a##########################this is wrong since its not action probablity under current policy
+	old_Prediction=memory.batch_pred
 	old_Prediction=np.array(old_Prediction)
 	action=np.array(memory.batch_a)########################
+	print(".")
 	print(episode)
-	policy.fit(x=[obs,advantage, old_Prediction],y=action,batch_size=200,shuffle=True, epochs=15, verbose=False)
-	critic.fit([obs],[returns], batch_size=200, shuffle=True, epochs=15, verbose=False)
+	policy.fit(x=[obs,advantage, old_Prediction],y=action,batch_size=64,shuffle=True, epochs=10, verbose=False)
+	critic.fit([obs],[returns], batch_size=64, shuffle=True, epochs=10, verbose=False)
 	#print(actor_loss,critic_loss)
 	memory.clear()
